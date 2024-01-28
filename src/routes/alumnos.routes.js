@@ -202,7 +202,6 @@ router.put("/actualizarAlumnos", async (req, res) => {
   }
 });
 
-//Borrar alumnos
 router.delete("/borrarAlumnos", async (req, res) => {
   try {
     const token = req.header("Authorization");
@@ -213,11 +212,27 @@ router.delete("/borrarAlumnos", async (req, res) => {
         });
       } else {
         const { id } = req.body;
+
+        // Verifica la existencia del alumno
+        const existeAlumno = await prisma.alumnos.count({
+          where: {
+            id: Number(id),
+          },
+        });
+
+        if (!existeAlumno) {
+          res.json({
+            message: "El alumno no existe",
+          });
+          return;
+        }
+
         const resultado = await prisma.alumnos.delete({
           where: {
             id: Number(id),
           },
         });
+
         res.json({
           message: "El alumno ha sido borrado",
         });
