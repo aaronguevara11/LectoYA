@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model alumnos {
+  id         Int          @id @default(autoincrement())
+  nombre     String       @db.VarChar(255)
+  apaterno   String       @db.VarChar(255)
+  amaterno   String       @db.VarChar(255)
+  correo     String       @unique @db.VarChar(255)
+  numero     String       @db.VarChar(13)
+  dni        String       @unique @db.VarChar(8)
+  password   String       @db.VarChar(255)
+  matriculas matriculas[]
+}
+
+model cursos {
+  id          Int          @id @default(autoincrement())
+  idDocente   Int
+  nombre      String       @db.VarChar(60)
+  descripcion String       @db.Text
+  nivel       Int
+  gys         String       @db.VarChar(15)
+  docente     docente      @relation(fields: [idDocente], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "cursos_ibfk_1")
+  matriculas  matriculas[]
+  temas       temas[]
+
+  @@index([idDocente], map: "idDocente")
+}
+
+model docente {
+  id       Int      @id @default(autoincrement())
+  nombre   String   @db.VarChar(35)
+  apaterno String   @db.VarChar(255)
+  amaterno String   @db.VarChar(255)
+  correo   String   @unique @db.VarChar(40)
+  numero   String   @db.VarChar(13)
+  password String   @db.VarChar(25)
+  dni      String   @unique @db.VarChar(8)
+  cursos   cursos[]
+}
+
+model estado_tema {
+  id          Int          @id @default(autoincrement())
+  idMatricula Int
+  idTema      Int
+  estado      String       @db.VarChar(255)
+  temas       temas        @relation(fields: [idTema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "estado_tema_ibfk_1")
+  matriculas  matriculas   @relation(fields: [idMatricula], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "estado_tema_ibfk_2")
+  respuestas  respuestas[]
+
+  @@index([idMatricula], map: "idMatricula")
+  @@index([idTema], map: "idTema")
+}
+
+model matriculas {
+  id          Int           @id @default(autoincrement())
+  idAlumno    Int
+  idCurso     Int
+  estado      String?       @db.VarChar(20)
+  estado_tema estado_tema[]
+  alumnos     alumnos       @relation(fields: [idAlumno], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "matriculas_ibfk_1")
+  cursos      cursos        @relation(fields: [idCurso], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "matriculas_ibfk_3")
+
+  @@index([idAlumno], map: "idAlumno")
+  @@index([idCurso], map: "idCurso")
+}
+
+model preguntas {
+  id         Int          @id @default(autoincrement())
+  idTema     Int
+  pregunta   String       @db.VarChar(255)
+  alt_a      String       @db.VarChar(255)
+  alt_b      String       @db.VarChar(255)
+  alt_c      String       @db.VarChar(255)
+  alt_d      String       @db.VarChar(255)
+  clave      String       @db.Char(1)
+  temas      temas        @relation(fields: [idTema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "preguntas_ibfk_1")
+  respuestas respuestas[]
+
+  @@index([idTema], map: "idTema")
+}
+
+model respuestas {
+  id            Int         @id @default(autoincrement())
+  idEstado_tema Int
+  idPregunta    Int
+  respuesta     String?     @db.Char(1)
+  estado        String?     @db.VarChar(255)
+  preguntas     preguntas   @relation(fields: [idPregunta], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "respuestas_ibfk_1")
+  estado_tema   estado_tema @relation(fields: [idEstado_tema], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "respuestas_ibfk_2")
+
+  @@index([idEstado_tema], map: "idEstado_tema")
+  @@index([idPregunta], map: "idPregunta")
+}
+
+model temas {
+  id          Int           @id @default(autoincrement())
+  idCurso     Int
+  nombre      String        @db.VarChar(255)
+  descripcion String        @db.Text
+  requisito   Int?
+  estado_tema estado_tema[]
+  preguntas   preguntas[]
+  cursos      cursos        @relation(fields: [idCurso], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "temas_ibfk_1")
+
+  @@index([idCurso], map: "idCurso")
+}
