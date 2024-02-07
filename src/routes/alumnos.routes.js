@@ -202,6 +202,7 @@ router.put("/actualizarAlumnos", async (req, res) => {
   }
 });
 
+//Borrar alumnos:
 router.delete("/borrarAlumnos", async (req, res) => {
   try {
     const token = req.header("Authorization");
@@ -277,6 +278,7 @@ router.put("/loginAlumnos", async (req, res) => {
   }
 });
 
+//Restablecer contraseña del alumno
 router.put("/alumnoRestablecer", async (req, res) => {
   try {
     const { correo, dni } = req.body;

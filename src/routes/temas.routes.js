@@ -16,11 +16,14 @@ router.get("/verTemas", async (req, res) => {
           message: "Error en el token",
         });
       } else {
-        const temas = await prisma.temas.findMany({
+        const tema1 = await prisma.cursos.findFirst({
+          where: {
+            idDocente: Number(payload.id),
+          },
           select: {
             nombre: true,
-            descripcion: true,
-            cursos: {
+            descripcion: false,
+            temas: {
               select: {
                 nombre: true,
                 descripcion: true,
@@ -28,9 +31,14 @@ router.get("/verTemas", async (req, res) => {
             },
           },
         });
+        if (!tema1) {
+          res.json({
+            message: "El tema no existe",
+          });
+        }
         res.json({
           message: "Temas registrados: ",
-          temas: temas,
+          temas: tema1,
         });
       }
     });
@@ -51,13 +59,11 @@ router.post("/agregarTemas", async (req, res) => {
         });
       } else {
         const { idCurso, nombre, descripcion } = req.body;
-
         const docente = payload.id;
-
         const curso = await prisma.cursos.findUnique({
           where: {
             id: Number(idCurso),
-            idDocente: docente,
+            idDocente: Number(docente),
           },
         });
 
@@ -139,7 +145,7 @@ router.delete("/borrarTemas", async (req, res) => {
           return;
         }
 
-        const t1 = await prisma.temas.delete({
+        await prisma.temas.delete({
           where: {
             id: Number(id),
           },
@@ -157,7 +163,7 @@ router.delete("/borrarTemas", async (req, res) => {
   }
 });
 
-router.get("/buscarTema/:id", async (req, res) => {
+router.get("/buscarTema", async (req, res) => {
   try {
     const token = req.header("Authorization");
     jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
@@ -166,23 +172,31 @@ router.get("/buscarTema/:id", async (req, res) => {
           message: "Error en el token",
         });
       } else {
-        const result = await prisma.temas.findFirst({
+        const { id } = req.body;
+        const tema1 = await prisma.cursos.findUnique({
           where: {
-            id: parseInt(req.params.id),
+            id: Number(id),
+            idDocente: Number(payload.id),
           },
           select: {
-            nombre: true,
-            descripcion: true,
-            cursos: {
+            nombre: false,
+            descripcion: false,
+            temas: {
               select: {
                 nombre: true,
+                descripcion: true,
               },
             },
           },
         });
+        if (!tema1) {
+          res.json({
+            message: "El tema no existe",
+          });
+        }
         res.json({
-          message: "Temas encontrados:",
-          result: result,
+          message: "Temas registrados: ",
+          temas: tema1,
         });
       }
     });

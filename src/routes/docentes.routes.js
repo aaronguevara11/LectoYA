@@ -235,4 +235,44 @@ router.put("/passwordDocente", async (req, res) => {
   }
 });
 
+//Eliminar cuenta
+router.delete("/eliminarDocente", async (req, res) => {
+  try {
+    const token = req.header("Authorization");
+    jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
+      if (err) {
+        res.json({
+          message: "Error en el token",
+        });
+      } else {
+        const { password } = req.body;
+        const verifica = await prisma.docente.findUnique({
+          where: {
+            id: Number(payload.id),
+            password: password,
+          },
+        });
+        if (verifica == null) {
+          res.json({
+            message: "Contraseña incorrecta",
+          });
+        } else {
+          await prisma.docente.delete({
+            where: {
+              id: Number(payload.id),
+            },
+          });
+          res.json({
+            message: "Cuenta eliminada con exito",
+          });
+        }
+      }
+    });
+  } catch {
+    res.json({
+      message: "Error",
+    });
+  }
+});
+
 export default router;

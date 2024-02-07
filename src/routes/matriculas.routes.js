@@ -19,13 +19,6 @@ router.get("/verMatriculas", async (req, res) => {
       } else {
         const matriculas = await prisma.matriculas.findMany({
           select: {
-            alumnos: {
-              select: {
-                nombre: true,
-                apaterno: true,
-                amaterno: true,
-              },
-            },
             cursos: {
               select: {
                 nombre: true,
@@ -54,7 +47,7 @@ router.get("/verMatriculas", async (req, res) => {
   }
 });
 
-router.get("/buscarMatricula/:id", async (req, res) => {
+router.get("/buscarMatricula", async (req, res) => {
   try {
     const token = req.header("Authorization");
     jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
@@ -63,9 +56,10 @@ router.get("/buscarMatricula/:id", async (req, res) => {
           message: "Error en el token",
         });
       } else {
+        const { id } = req.body;
         const result = await prisma.matriculas.findFirst({
           where: {
-            id: parseInt(req.params.id),
+            id: Number(id),
           },
           select: {
             id: false,
@@ -109,7 +103,7 @@ router.post("/matricularAlumno", async (req, res) => {
           message: "Error en el token",
         });
       } else {
-        const { idCurso, estado } = req.body;
+        const { idCurso } = req.body;
         // Verifica si el curso existe
         const curso = await prisma.cursos.findUnique({
           where: { id: Number(idCurso) },
@@ -137,7 +131,6 @@ router.post("/matricularAlumno", async (req, res) => {
         await prisma.matriculas.create({
           data: {
             idCurso: Number(idCurso),
-            estado: estado,
             idAlumno: Number(payload.id),
           },
         });

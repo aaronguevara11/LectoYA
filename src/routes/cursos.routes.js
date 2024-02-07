@@ -18,6 +18,18 @@ router.get("/verCursos", async (req, res) => {
       } else {
         const idDocente = Number(payload.id);
 
+        const busdoc = await prisma.docente.findUnique({
+          where: {
+            id: Number(payload.id),
+          },
+        });
+
+        if (!busdoc) {
+          res.json({
+            message: "El docente no existe o no ha iniciado sesion",
+          });
+        }
+
         // Obtiene los cursos del docente
         const cursos = await prisma.cursos.findMany({
           where: {
@@ -28,13 +40,6 @@ router.get("/verCursos", async (req, res) => {
             nombre: true,
             descripcion: true,
             gys: true,
-            docente: {
-              select: {
-                nombre: true,
-                apaterno: true,
-                amaterno: true,
-              },
-            },
             matriculas: {
               select: {
                 alumnos: {
@@ -61,42 +66,6 @@ router.get("/verCursos", async (req, res) => {
   }
 });
 
-router.get("/cursosAlumnos", async (req, res) => {
-  try {
-    const token = req.header("Authorization");
-    jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
-      if (err) {
-        res.json({
-          message: "Hubo un error en el token",
-        });
-      } else {
-        const idAlumno = Number(payload.id);
-
-        // Obtiene los cursos del alumno
-        const matriculas = await prisma.matriculas.findMany({
-          where: {
-            idAlumno: idAlumno,
-          },
-        });
-
-        const cursos = [];
-        matriculas.forEach((matricula) => {
-          cursos.push(matricula.curso);
-        });
-
-        res.json({
-          message: "cursos registrados",
-          cursos: cursos,
-        });
-      }
-    });
-  } catch {
-    res.json({
-      message: "Error en el sistema",
-    });
-  }
-});
-
 router.post("/crearCurso", async (req, res) => {
   try {
     const token = req.header("Authorization");
@@ -106,19 +75,30 @@ router.post("/crearCurso", async (req, res) => {
           message: "Error en el token",
         });
       } else {
-        const { nombre, descripcion, nivel, gys } = req.body;
-        await prisma.cursos.create({
-          data: {
-            nombre: nombre,
-            descripcion: descripcion,
-            nivel: Number(nivel),
-            gys: gys,
-            idDocente: Number(payload.id),
+        const resultado = await prisma.docente.findUnique({
+          where: {
+            id: Number(payload.id),
           },
         });
-        res.json({
-          message: "El curso se creo con exito",
-        });
+        if (!resultado) {
+          res.json({
+            message: "El docente no existe o borro la cuenta",
+          });
+        } else {
+          const { nombre, descripcion, nivel, gys } = req.body;
+          await prisma.cursos.create({
+            data: {
+              nombre: nombre,
+              descripcion: descripcion,
+              nivel: Number(nivel),
+              gys: gys,
+              idDocente: Number(payload.id),
+            },
+          });
+          res.json({
+            message: "El curso se creo con exito",
+          });
+        }
       }
     });
   } catch {
@@ -148,7 +128,8 @@ router.put("/actualizarCurso", async (req, res) => {
 
         if (!curso) {
           res.json({
-            message: "El usuario no es docente del curso",
+            message:
+              "El usuario no es docente del curso y/o el curso no existe",
           });
           return;
         }
@@ -187,12 +168,15 @@ router.delete("/eliminarCurso", async (req, res) => {
 
         // Verifica si el curso existe
         const curso = await prisma.cursos.findUnique({
-          where: { id: Number(id) },
+          where: {
+            id: Number(id),
+            idDocente: Number(payload.id),
+          },
         });
 
         if (!curso) {
           return res.json({
-            message: "El curso no existe",
+            message: "El curso no existe o no es docente del curso",
           });
         }
 
@@ -214,7 +198,7 @@ router.delete("/eliminarCurso", async (req, res) => {
   }
 });
 
-router.get("/buscarCurso/:id", async (req, res) => {
+router.get("/buscarCurso", async (req, res) => {
   try {
     const token = req.header("Authorization");
     jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
@@ -223,9 +207,10 @@ router.get("/buscarCurso/:id", async (req, res) => {
           message: "Error en el token",
         });
       } else {
+        const { id } = req.body;
         const result = await prisma.cursos.findFirst({
           where: {
-            id: parseInt(req.params.id),
+            id: id,
           },
           select: {
             id: false,
@@ -241,6 +226,11 @@ router.get("/buscarCurso/:id", async (req, res) => {
             },
           },
         });
+        if (!result) {
+          res.json({
+            message: "El curso no existe",
+          });
+        }
         res.json({
           message: "Cursos encontrados:",
           result: result,
